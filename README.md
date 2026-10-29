@@ -21,7 +21,7 @@ Open the **Actions** tab and run **instabox-keepalive** via
 `Run workflow`, or:
 
 ```bash
-gh workflow run instabox-keepalive.yml \
+gh workflow run keepalive.yml \
   --repo Laurenceli13/instabox-keepalive
 ```
 
