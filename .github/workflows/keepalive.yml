@@ -31,7 +31,9 @@ jobs:
 
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -p 2222 ssh.instabox.sh >> ~/.ssh/known_hosts 2>/dev/null
+          # keyscan can fail transiently while Instabox rotates gateway IPs.
+          # Do not let that abort the run before the SSH retry loop.
+          ssh-keyscan -p 2222 ssh.instabox.sh >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 600 ~/.ssh/known_hosts
 
           for attempt in 1 2 3; do
@@ -39,7 +41,7 @@ jobs:
             if ssh \
               -p 2222 \
               -o BatchMode=yes \
-              -o StrictHostKeyChecking=yes \
+              -o StrictHostKeyChecking=accept-new \
               -o ConnectTimeout=30 \
               -o ServerAliveInterval=10 \
               -o ServerAliveCountMax=3 \
