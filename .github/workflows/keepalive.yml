@@ -24,6 +24,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Only keep the machine awake during these Asia/Shanghai windows:
+          # 00:35-07:50, 08:30-13:00, 13:35-18:00, 18:35-23:59
+          now=$((10#$(TZ=Asia/Shanghai date +%H%M)))
+          if ! (( (now >= 35 && now <= 750) || (now >= 830 && now <= 1300) || (now >= 1335 && now <= 1800) || (now >= 1835 && now <= 2359) )); then
+            echo "Outside keepalive window; leaving Instabox idle"
+            exit 0
+          fi
+
           if [ -z "${INSTABOX_SSH_USER:-}" ]; then
             echo "::error::Secret INSTABOX_SSH_USER is missing"
             exit 1
