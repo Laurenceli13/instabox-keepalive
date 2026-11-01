@@ -5,13 +5,26 @@ session through the Instabox SSH gateway every five minutes.
 
 ## How it works
 
-- GitHub Actions schedule: every 5 minutes (`*/5 * * * *`)
+- GitHub Actions schedule: every 5 minutes (`*/5 * * * *`), but it only connects
+  during the Asia/Shanghai keepalive windows below
 - SSH gateway: `ssh.instabox.sh:2222`
 - Authentication: Instabox gateway token as the SSH username, stored in the
   repository secret `INSTABOX_SSH_USER`
 - The session runs `date`, `uptime`, and then stays open for 10 seconds before
   exiting, which counts as activity and prevents the free-tier 30-minute idle
   pause.
+
+Keepalive windows (Asia/Shanghai):
+
+```text
+00:35-07:50
+08:30-13:00
+13:35-18:00
+18:35-23:59
+```
+
+Outside those windows the workflow exits without touching the machine, so the
+free tier can auto-pause and reset its 480-minute continuous-run counter.
 
 The workflow logs never print the token. The repository contains no credentials.
 
