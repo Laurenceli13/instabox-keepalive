@@ -10,6 +10,7 @@ session through the Instabox SSH gateway every five minutes.
 - SSH gateway: `ssh.instabox.sh:2222`
 - Authentication: Instabox gateway token as the SSH username, stored in the
   repository secret `INSTABOX_SSH_USER`
+  and the second machine's token in `INSTABOX_SSH_USER_2`
 - The session runs `date`, `uptime`, and then stays open for 10 seconds before
   exiting, which counts as activity and prevents the free-tier 30-minute idle
   pause.
