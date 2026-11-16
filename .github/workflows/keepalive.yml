@@ -21,6 +21,7 @@ jobs:
       - name: Open a short SSH session
         env:
           INSTABOX_SSH_USER: ${{ secrets.INSTABOX_SSH_USER }}
+          INSTABOX_SSH_USER_2: ${{ secrets.INSTABOX_SSH_USER_2 }}
         run: |
           set -euo pipefail
 
@@ -32,8 +33,8 @@ jobs:
             exit 0
           fi
 
-          if [ -z "${INSTABOX_SSH_USER:-}" ]; then
-            echo "::error::Secret INSTABOX_SSH_USER is missing"
+          if [ -z "${INSTABOX_SSH_USER:-}" ] || [ -z "${INSTABOX_SSH_USER_2:-}" ]; then
+            echo "::error::Secrets INSTABOX_SSH_USER and INSTABOX_SSH_USER_2 are required"
             exit 1
           fi
 
@@ -44,26 +45,36 @@ jobs:
           ssh-keyscan -p 2222 ssh.instabox.sh >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 600 ~/.ssh/known_hosts
 
-          for attempt in 1 2 3; do
-            echo "Attempt ${attempt}/3"
-            if ssh \
-              -p 2222 \
-              -o BatchMode=yes \
-              -o StrictHostKeyChecking=accept-new \
-              -o ConnectTimeout=30 \
-              -o ServerAliveInterval=10 \
-              -o ServerAliveCountMax=3 \
-              -o PreferredAuthentications=none \
-              -o PubkeyAuthentication=no \
-              -o PasswordAuthentication=no \
-              -o KbdInteractiveAuthentication=no \
-              "${INSTABOX_SSH_USER}@ssh.instabox.sh" \
-              'echo "connected: $(hostname)"; date -u; uptime; sleep 10; echo done'; then
-              echo "::notice::Instabox session completed"
-              exit 0
+          failed=0
+          for user in "${INSTABOX_SSH_USER}" "${INSTABOX_SSH_USER_2}"; do
+            connected=0
+            for attempt in 1 2 3; do
+              echo "Attempt ${attempt}/3"
+              if ssh \
+                -p 2222 \
+                -o BatchMode=yes \
+                -o StrictHostKeyChecking=accept-new \
+                -o ConnectTimeout=30 \
+                -o ServerAliveInterval=10 \
+                -o ServerAliveCountMax=3 \
+                -o PreferredAuthentications=none \
+                -o PubkeyAuthentication=no \
+                -o PasswordAuthentication=no \
+                -o KbdInteractiveAuthentication=no \
+                "${user}@ssh.instabox.sh" \
+                'echo "connected: $(hostname)"; date -u; uptime; sleep 10; echo done'; then
+                connected=1
+                break
+              fi
+              sleep 15
+            done
+            if [ "$connected" -ne 1 ]; then
+              echo "::error::Could not reach an Instabox machine"
+              failed=1
             fi
-            sleep 15
           done
 
-          echo "::error::Could not reach Instabox after 3 attempts"
-          exit 1
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+          echo "::notice::Both Instabox sessions completed"
