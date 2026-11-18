@@ -1,0 +1,66 @@
+name: instabox-kjdm-keepalive
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instabox-kjdm-keepalive
+  cancel-in-progress: true
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Keep Instabox-3 active
+        env:
+          INSTABOX_SSH_USER_KJDM: ${{ secrets.INSTABOX_SSH_USER_KJDM }}
+        run: |
+          set -euo pipefail
+
+          # Match the existing keepalive windows so the 480-minute limit resets.
+          now=$((10#$(TZ=Asia/Shanghai date +%H%M)))
+          if ! (( (now >= 35 && now <= 750) || (now >= 830 && now <= 1300) || (now >= 1335 && now <= 1800) || (now >= 1835 && now <= 2359) )); then
+            echo "Outside keepalive window; leaving Instabox-3 idle"
+            exit 0
+          fi
+
+          if [ -z "${INSTABOX_SSH_USER_KJDM:-}" ]; then
+            echo "::error::Secret INSTABOX_SSH_USER_KJDM is missing"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -p 2222 ssh.instabox.sh >> ~/.ssh/known_hosts 2>/dev/null || true
+          chmod 600 ~/.ssh/known_hosts
+
+          for attempt in 1 2 3; do
+            echo "Attempt ${attempt}/3"
+            if ssh \
+              -p 2222 \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=30 \
+              -o ServerAliveInterval=10 \
+              -o ServerAliveCountMax=3 \
+              -o PreferredAuthentications=none \
+              -o PubkeyAuthentication=no \
+              -o PasswordAuthentication=no \
+              -o KbdInteractiveAuthentication=no \
+              "${INSTABOX_SSH_USER_KJDM}@ssh.instabox.sh" \
+              'echo "connected: $(hostname)"; date -u; uptime; sleep 10; echo done'; then
+              echo "::notice::Instabox-3 keepalive session completed"
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "::error::Could not reach Instabox-3 after 3 attempts"
+          exit 1
