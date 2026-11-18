@@ -15,13 +15,15 @@ concurrency:
 jobs:
   wake:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
-      - name: Open a short SSH session
+      - name: Open a short SSH session on all four machines
         env:
           INSTABOX_SSH_USER: ${{ secrets.INSTABOX_SSH_USER }}
           INSTABOX_SSH_USER_2: ${{ secrets.INSTABOX_SSH_USER_2 }}
+          INSTABOX_SSH_USER_KJDM: ${{ secrets.INSTABOX_SSH_USER_KJDM }}
+          INSTABOX_SSH_USER_MXPL: ${{ secrets.INSTABOX_SSH_USER_MXPL }}
         run: |
           set -euo pipefail
 
@@ -33,8 +35,11 @@ jobs:
             exit 0
           fi
 
-          if [ -z "${INSTABOX_SSH_USER:-}" ] || [ -z "${INSTABOX_SSH_USER_2:-}" ]; then
-            echo "::error::Secrets INSTABOX_SSH_USER and INSTABOX_SSH_USER_2 are required"
+          if [ -z "${INSTABOX_SSH_USER:-}" ] || \
+             [ -z "${INSTABOX_SSH_USER_2:-}" ] || \
+             [ -z "${INSTABOX_SSH_USER_KJDM:-}" ] || \
+             [ -z "${INSTABOX_SSH_USER_MXPL:-}" ]; then
+            echo "::error::All four Instabox SSH token secrets are required"
             exit 1
           fi
 
@@ -46,7 +51,11 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
           failed=0
-          for user in "${INSTABOX_SSH_USER}" "${INSTABOX_SSH_USER_2}"; do
+          for user in \
+            "${INSTABOX_SSH_USER}" \
+            "${INSTABOX_SSH_USER_2}" \
+            "${INSTABOX_SSH_USER_KJDM}" \
+            "${INSTABOX_SSH_USER_MXPL}"; do
             connected=0
             for attempt in 1 2 3; do
               echo "Attempt ${attempt}/3"
@@ -77,4 +86,4 @@ jobs:
           if [ "$failed" -ne 0 ]; then
             exit 1
           fi
-          echo "::notice::Both Instabox sessions completed"
+          echo "::notice::All four Instabox sessions completed"
