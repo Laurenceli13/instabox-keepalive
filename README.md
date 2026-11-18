@@ -2,11 +2,11 @@
 
 Keeps all four Instabox machines awake during the configured Asia/Shanghai
 windows by opening a short SSH session through the Instabox SSH gateway every
-five minutes.
+15 minutes.
 
 ## How it works
 
-- GitHub Actions schedule: every 5 minutes (`*/5 * * * *`), but it only connects
+- GitHub Actions schedule: every 15 minutes (`*/15 * * * *`), but it only connects
   during the Asia/Shanghai keepalive windows below
 - SSH gateway: `ssh.instabox.sh:2222`
 - Authentication: Instabox gateway token as the SSH username, stored in the
@@ -52,7 +52,7 @@ gh workflow run keepalive.yml \
 
 ## Notes
 
-- GitHub scheduled workflows can be delayed during peak periods. The 5-minute
+- GitHub scheduled workflows can be delayed during peak periods. The 15-minute
   cadence leaves margin under Instabox's 30-minute idle threshold.
 - GitHub disables scheduled workflows after 60 days without repository
   activity. `repo-activity.yml` commits a timestamp on the first day of each
