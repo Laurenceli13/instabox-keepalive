@@ -36,7 +36,9 @@ The workflow logs never print the token. The repository contains no credentials.
 The primary keepalive runs on Oracle Phoenix `phx-amd-01` through
 `instabox-keepalive.timer`. That script reads every Token file in
 `/etc/instabox-keepalive/tokens`, so adding a machine there also requires no
-script change. GitHub Actions remains the backup path.
+script change. Its source is mirrored at `oracle/instabox-keepalive.sh`, and it
+returns failure unless every token file produces a successful SSH session.
+GitHub Actions remains the backup path.
 
 ## Manual run
 
